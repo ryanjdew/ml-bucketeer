@@ -7,7 +7,7 @@ It creates 'buckets' in a map object based off of a regular expression ("regex")
 if you want to bucket based off of the first character of an string you could pass 
 "^.". (See Executing for full example). Arguments after that are options. You can have "case-insensitive" or "capture-overflow" to catch items that might now match the regular expression.
 
-For dateTime you can specify what you want to bucket by.
+For dateTime you can specify any combination of the following to bucket by. Default is ("year","month").
 -"year"
 -"month"
 -"day-of-year"
@@ -29,14 +29,13 @@ may need to copy this entire directory out of Program Files to another directory
 in order to work around Windows security problems writing into Program Files.
 
 
-Building
---------
-
-For all platforms, run the "make" command from this directory.
-
-
 Installing
 ----------
+From command line:
+```bash
+make
+```
+From QConsole:
 ```xquery
 xquery version "1.0-ml";
 import module namespace plugin = "http://marklogic.com/extension/plugin"
@@ -49,9 +48,6 @@ plugin:install-from-zip("native",
 Executing
 ---------
 
-To execute an aggregate user defined function from the sample plugin, you can
-use the cts:aggregate() function, ie:
-
 ```xquery
 xquery version "1.0-ml";
 
@@ -59,7 +55,7 @@ cts:aggregate(
   "native/bucketeer-audf", 
   "regex", 
   cts:element-reference(xs:QName("name"),"collation=http://marklogic.com/collation/codepoint"),
-  ("^.", "case-insensitive")
+  ("^[a-z]", "case-insensitive","capture-overflow")
 ),
 cts:aggregate(
   "native/bucketeer-audf", 
