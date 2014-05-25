@@ -1,11 +1,11 @@
 #include <MarkLogic.h>
-#include <regex.h> 
-#include <string.h>
+#include <algorithm>
+#include <chrono>
 #include <ctime>
 #include <map>
-#include <vector>
+#include <regex.h> 
 #include <sstream>
-#include <chrono>
+#include <string>
 
 #ifdef _MSC_VER
 #define PLUGIN_DLL __declspec(dllexport)
@@ -47,16 +47,19 @@ template<class T>
 void Bucketeer<T>::
 finish(OutputSequence& os, Reporter& reporter)
 {
-  std::vector<String> keys;
-  for (typename std::multimap<String, T>::iterator it = buckets.begin(); it != buckets.end(); it = buckets.upper_bound(it->first)) {
-    keys.push_back(it->first);
-  }
+  // start the MarkLogic map
   os.startMap();
-  for (std::vector<String>::iterator it = keys.begin(); it != keys.end(); ++it) {
+  // interate over the unique keys
+  // note the use of buckets.upper_bound() to ensure we get a key only once
+  for (typename std::multimap<String, T>::iterator it = buckets.begin(); it != buckets.end(); it = buckets.upper_bound(it->first)) {
     std::pair <typename std::multimap<String,T>::iterator, typename std::multimap<String,T>::iterator> ret;
-    ret = buckets.equal_range(*it);
-    os.writeMapKey((*it));
+    // get the range for the key values
+    ret = buckets.equal_range(it->first);
+    // write the map key
+    os.writeMapKey(it->first);
+    // iterate over the values for current key
     for (typename std::multimap<String, T>::iterator it2 = ret.first; it2 != ret.second; ++it2) {
+      // write the value
       os.writeValue(it2->second);
     }
   }
@@ -142,8 +145,11 @@ decode(Decoder& d, Reporter& reporter)
 class BucketeerRegex : public Bucketeer<String>
 {
 public:
+  std::string overflow_bucket;
   String regex;
   regex_t regex_compiled;
+  bool case_insensitive;
+  bool capture_overflow;
 public:
   AggregateUDF* clone() const { return new BucketeerRegex(*this); }
   void start(Sequence&, Reporter&);
@@ -153,6 +159,9 @@ public:
 void BucketeerRegex::
 start(Sequence& arg, Reporter& reporter)
 {
+  overflow_bucket = "bucketeer:overflow";
+  case_insensitive = false;
+  capture_overflow = false;
   int reti;
   int case_sensitive = 0;
   int extended = 0;
@@ -164,8 +173,11 @@ start(Sequence& arg, Reporter& reporter)
     const char* val = arg_value.get();
     if (strcmp(val,"case-insensitive") == 0) {
       case_sensitive = REG_ICASE;
+      case_insensitive = true;
     } else if (strcmp(val,"extended") == 0) {
       extended = REG_EXTENDED;
+    } else if (strcmp(val,"capture-overflow") == 0) {
+      capture_overflow = true;
     }
     arg.next();
   }
@@ -199,10 +211,23 @@ map(TupleIterator& values, Reporter& reporter)
         }
         // add trailing NULL to match
         match_str[match_length - 1] = '\0';
-        String* match = new String(match_str,cur.collation());
+        String* match;
+        // make everything lowercase if case_insensitive option is passed
+        if (case_insensitive) {
+          std::string tmp_str = std::string(match_str);
+          std::transform(tmp_str.begin(), tmp_str.end(),tmp_str.begin(), ::tolower);
+          match = new String(tmp_str.c_str(),cur.collation());
+        } else {
+          match = new String(match_str,cur.collation());
+        }
 		    /* Store the pointer to the marklogic::String for output later */
         buckets.insert(std::pair<String, String>(*(match),*(new String(cp_str,cur.collation()))));
-	    }
+	    } else if (capture_overflow) {
+		    size_t str_length = strlen(cur.get());
+		    char cp_str[str_length];
+		    strcpy(cp_str,cur.get());
+        buckets.insert(std::pair<String, String>(*(new String(overflow_bucket.c_str(),cur.collation())),*(new String(cp_str,cur.collation()))));
+	    } 
     }
   }
 }

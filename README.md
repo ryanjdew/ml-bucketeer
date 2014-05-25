@@ -3,9 +3,19 @@ MarkLogic Bucketeer Native Plugin
 
 What it does
 ------------
-It creates 'buckets' in a map object based off of a regular expression. For example,
+It creates 'buckets' in a map object based off of a regular expression ("regex") or specified parts of dateTime ("dateTime"). For example,
 if you want to bucket based off of the first character of an string you could pass 
-"^.". (See Executing for full example)
+"^.". (See Executing for full example). Arguments after that are options. You can have "case-insensitive" or "capture-overflow" to catch items that might now match the regular expression.
+
+For dateTime you can specify what you want to bucket by.
+-"year"
+-"month"
+-"day-of-year"
+-"day-of-month"
+-"day-of-week"
+-"hour"
+-"minute"
+-"second"
 
 Requirements
 ------------
@@ -47,9 +57,15 @@ xquery version "1.0-ml";
 
 cts:aggregate(
   "native/bucketeer-audf", 
-  "bucketeer", 
+  "regex", 
   cts:element-reference(xs:QName("name"),"collation=http://marklogic.com/collation/codepoint"),
-  "^."
+  ("^.", "case-insensitive")
+),
+cts:aggregate(
+  "native/bucketeer-audf", 
+  "dateTime", 
+  cts:element-reference(xs:QName("dateTime"),"type=dateTime"),
+  ("year","month")
 )
 ```
 
