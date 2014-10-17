@@ -5,7 +5,7 @@ What it does
 ------------
 It creates 'buckets' in a map object based off of a regular expression ("regex") or specified parts of dateTime ("dateTime"). For example,
 if you want to bucket based off of the first character of an string you could pass 
-"^.". (See Executing for full example). Arguments after that are options. You can have "case-insensitive" or "capture-overflow" to catch items that might now match the regular expression.
+"^.". (See Executing for full example). Arguments after that are options. You can have "case-insensitive" or "capture-overflow" to catch items that might not match the regular expression.
 
 For dateTime you can specify any combination of the following to bucket by. Default is ("year","month").
 -"year"
