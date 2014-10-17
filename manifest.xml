@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://marklogic.com/extension/plugin">
+  <name>bucketeer-audf</name>
+  <id>bucketeer-audf</id>
+  <version>0.1</version>
+  <provider-name>Ryan Dew</provider-name>
+  <description>Example native plugin that buckets data in a map</description>
+  <native>
+    <path>libbucketeer-audf.dylib</path>
+  </native>
+</plugin>
